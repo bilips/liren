@@ -1,0 +1,379 @@
+[gd_scene load_steps=21 format=2]
+
+[ext_resource path="res://assets/art/Background.JPG" type="Texture" id=1]
+[ext_resource path="res://assets/fonts/TitleFont.tres" type="DynamicFont" id=2]
+[ext_resource path="res://assets/fonts/GlowSansSC-Normal-Medium.otf" type="DynamicFontData" id=3]
+[ext_resource path="res://scenes/menu/Menu.gd" type="Script" id=4]
+[ext_resource path="res://scenes/menu/UIFont.tres" type="DynamicFont" id=5]
+[ext_resource path="res://assets/art/icons/checkbox_0.svg" type="Texture" id=6]
+[ext_resource path="res://assets/art/icons/checkbox_1.svg" type="Texture" id=7]
+
+[sub_resource type="DynamicFont" id=2]
+size = 60
+extra_spacing_top = 5
+extra_spacing_bottom = 5
+font_data = ExtResource( 3 )
+
+[sub_resource type="StyleBoxFlat" id=3]
+bg_color = Color( 0.156863, 0.14902, 0.14902, 0.784314 )
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id=4]
+bg_color = Color( 0.156863, 0.14902, 0.14902, 0.705882 )
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id=5]
+bg_color = Color( 0.156863, 0.14902, 0.14902, 0.862745 )
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id=6]
+bg_color = Color( 0.101961, 0.101961, 0.101961, 0.588235 )
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id=7]
+bg_color = Color( 0.6, 0.6, 0.6, 0 )
+
+[sub_resource type="DynamicFont" id=8]
+size = 60
+extra_spacing_char = 5
+font_data = ExtResource( 3 )
+
+[sub_resource type="DynamicFont" id=9]
+size = 40
+extra_spacing_top = 5
+extra_spacing_bottom = 5
+font_data = ExtResource( 3 )
+
+[sub_resource type="DynamicFont" id=14]
+size = 45
+extra_spacing_top = 2
+extra_spacing_bottom = 2
+font_data = ExtResource( 3 )
+
+[sub_resource type="Animation" id=10]
+resource_name = "Flag"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath(".:rect_scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.5 ),
+"transitions": PoolRealArray( 0.5, 1 ),
+"update": 0,
+"values": [ Vector2( 1e-05, 1e-05 ), Vector2( 1, 1 ) ]
+}
+
+[sub_resource type="Animation" id=11]
+length = 0.001
+tracks/0/type = "bezier"
+tracks/0/path = NodePath(".:rect_scale:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"points": PoolRealArray( 1e-05, -0.25, 0, 0.25, 0 ),
+"times": PoolRealArray( 0 )
+}
+tracks/1/type = "bezier"
+tracks/1/path = NodePath(".:rect_scale:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"points": PoolRealArray( 1e-05, -0.25, 0, 0.25, 0 ),
+"times": PoolRealArray( 0 )
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath(".:rect_scale")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 1e-05, 1e-05 ) ]
+}
+
+[sub_resource type="Animation" id=12]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/path = NodePath("Title:rect_scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 1e-05, 1e-05 ) ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("BTNS:rect_scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 1e-05, 1e-05 ) ]
+}
+
+[sub_resource type="Animation" id=13]
+resource_name = "Start"
+length = 0.8
+tracks/0/type = "value"
+tracks/0/path = NodePath("Title:rect_scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.8 ),
+"transitions": PoolRealArray( 0.3, 1 ),
+"update": 0,
+"values": [ Vector2( 1e-05, 1e-05 ), Vector2( 1, 1 ) ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("BTNS:rect_scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.2, 0.8 ),
+"transitions": PoolRealArray( 1, 0.3, 1 ),
+"update": 0,
+"values": [ Vector2( 1e-05, 1e-05 ), Vector2( 1e-05, 1e-05 ), Vector2( 1, 1 ) ]
+}
+
+[node name="Menu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource( 4 )
+
+[node name="Background" type="TextureRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource( 1 )
+expand = true
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Title" type="Label" parent="."]
+margin_right = 1088.0
+margin_bottom = 320.0
+rect_scale = Vector2( 1e-05, 1e-05 )
+rect_pivot_offset = Vector2( 544, 160 )
+custom_fonts/font = ExtResource( 2 )
+text = "立人中学模拟器"
+align = 1
+valign = 1
+
+[node name="BTNS" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -840.0
+margin_top = -156.0
+margin_right = 8.0
+margin_bottom = 420.0
+rect_scale = Vector2( 1e-05, 1e-05 )
+rect_pivot_offset = Vector2( 424, 288 )
+custom_constants/separation = 60
+
+[node name="Start" type="Button" parent="BTNS"]
+margin_right = 848.0
+margin_bottom = 98.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 2 )
+custom_styles/hover = SubResource( 3 )
+custom_styles/pressed = SubResource( 4 )
+custom_styles/normal = SubResource( 5 )
+text = "开始"
+
+[node name="Setting" type="Button" parent="BTNS"]
+margin_top = 158.0
+margin_right = 848.0
+margin_bottom = 256.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 2 )
+custom_styles/hover = SubResource( 3 )
+custom_styles/pressed = SubResource( 4 )
+custom_styles/normal = SubResource( 5 )
+text = "设置"
+
+[node name="HowToPlay" type="Button" parent="BTNS"]
+margin_top = 316.0
+margin_right = 848.0
+margin_bottom = 414.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 2 )
+custom_styles/hover = SubResource( 3 )
+custom_styles/pressed = SubResource( 4 )
+custom_styles/normal = SubResource( 5 )
+text = "玩法"
+
+[node name="Quit" type="Button" parent="BTNS"]
+margin_top = 474.0
+margin_right = 848.0
+margin_bottom = 572.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 2 )
+custom_styles/hover = SubResource( 3 )
+custom_styles/pressed = SubResource( 4 )
+custom_styles/normal = SubResource( 5 )
+text = "退出"
+
+[node name="TabPanel" type="TabContainer" parent="."]
+margin_left = 1112.0
+margin_top = 288.0
+margin_right = 1792.0
+margin_bottom = 960.0
+rect_scale = Vector2( 1e-05, 1e-05 )
+rect_pivot_offset = Vector2( 340, 336 )
+custom_styles/panel = SubResource( 6 )
+tabs_visible = false
+
+[node name="Setting" type="Panel" parent="TabPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_styles/panel = SubResource( 7 )
+
+[node name="Title" type="Label" parent="TabPanel/Setting"]
+margin_right = 416.0
+margin_bottom = 104.0
+custom_fonts/font = SubResource( 8 )
+text = "设置"
+align = 1
+valign = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TabPanel/Setting"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 32.0
+margin_top = 112.0
+margin_right = -32.0
+margin_bottom = -32.0
+custom_constants/separation = 40
+
+[node name="ShowFPS" type="CheckBox" parent="TabPanel/Setting/VBoxContainer"]
+margin_right = 616.0
+margin_bottom = 108.0
+focus_mode = 0
+custom_fonts/font = ExtResource( 5 )
+custom_icons/checked = ExtResource( 7 )
+custom_icons/unchecked = ExtResource( 6 )
+pressed = true
+text = "显示帧数"
+
+[node name="FullScreen" type="CheckBox" parent="TabPanel/Setting/VBoxContainer"]
+margin_top = 148.0
+margin_right = 616.0
+margin_bottom = 256.0
+focus_mode = 0
+custom_fonts/font = ExtResource( 5 )
+custom_icons/checked = ExtResource( 7 )
+custom_icons/unchecked = ExtResource( 6 )
+text = "全屏"
+
+[node name="Close" type="Button" parent="TabPanel/Setting"]
+anchor_left = 1.0
+anchor_right = 1.0
+margin_left = -184.0
+margin_top = 16.0
+margin_right = -16.0
+margin_bottom = 91.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 9 )
+text = "关闭"
+flat = true
+
+[node name="HowToPlay" type="Panel" parent="TabPanel"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_styles/panel = SubResource( 7 )
+
+[node name="Title" type="Label" parent="TabPanel/HowToPlay"]
+margin_right = 416.0
+margin_bottom = 104.0
+custom_fonts/font = SubResource( 8 )
+text = "玩法"
+align = 1
+valign = 1
+
+[node name="RichTextLabel" type="RichTextLabel" parent="TabPanel/HowToPlay"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 32.0
+margin_top = 112.0
+margin_right = -32.0
+margin_bottom = -32.0
+custom_fonts/normal_font = SubResource( 14 )
+text = "欢迎游玩本游戏！
+
+你将在立人中学授课5天，期间你可以讲课或者考试（这些操作需要时间和饱食度，如果饱食度不足可以去食堂吃饭）。每天都会有150块钱，钱可以用来买食物，最后会结算到最终分数里。
+
+按WASD进行移动，移动鼠标进行视角旋转，按F5进行视角切换（第一人称、第二人称、第三人称），按组合键Alt + F4强制退出游戏。
+
+祝你好运！"
+
+[node name="Close" type="Button" parent="TabPanel/HowToPlay"]
+anchor_left = 1.0
+anchor_right = 1.0
+margin_left = -184.0
+margin_top = 16.0
+margin_right = -16.0
+margin_bottom = 91.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 9 )
+text = "关闭"
+flat = true
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="TabPanel"]
+anims/Flag = SubResource( 10 )
+anims/RESET = SubResource( 11 )
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+autoplay = "Start"
+anims/RESET = SubResource( 12 )
+anims/Start = SubResource( 13 )
+
+[connection signal="pressed" from="BTNS/Start" to="." method="_on_Start_pressed"]
+[connection signal="pressed" from="BTNS/Setting" to="." method="_on_Setting_pressed"]
+[connection signal="pressed" from="BTNS/HowToPlay" to="." method="_on_HowToPlay_pressed"]
+[connection signal="pressed" from="BTNS/Quit" to="." method="_on_Quit_pressed"]
+[connection signal="toggled" from="TabPanel/Setting/VBoxContainer/ShowFPS" to="." method="_on_ShowFPS_toggled"]
+[connection signal="toggled" from="TabPanel/Setting/VBoxContainer/FullScreen" to="." method="_on_FullScreen_toggled"]
+[connection signal="pressed" from="TabPanel/Setting/Close" to="." method="_on_TabClose_pressed"]
+[connection signal="pressed" from="TabPanel/HowToPlay/Close" to="." method="_on_TabClose_pressed"]

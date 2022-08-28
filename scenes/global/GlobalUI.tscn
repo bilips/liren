@@ -1,0 +1,973 @@
+[gd_scene load_steps=22 format=2]
+
+[ext_resource path="res://scenes/menu/UIFont.tres" type="DynamicFont" id=1]
+[ext_resource path="res://assets/fonts/GlowSansSC-Normal-Medium.otf" type="DynamicFontData" id=2]
+
+[sub_resource type="GDScript" id=12]
+resource_name = "GlobalUI"
+script/source = "extends CanvasLayer
+
+var do_things = 0
+var is_tspanel_show = false
+var up_value = [10, 5, 1, 50, 60, 80, 20]
+var up_coin = [3, 2, 666, 20, 25, 30, 15]
+
+func _ready():
+	set_process(false)
+	hide()
+	var cl = $\"Control/UITab/选择章节/ContentList\"
+	for count in cl.get_item_count():
+		Data.chapters.append(cl.get_item_text(count))
+
+
+func flash_tab(index):
+	if index == 0:
+		if Data.can_talk_chapters.size():
+			var tl = $\"Control/UITab/讲台/TechList\"
+			tl.clear()
+			for item in Data.can_talk_chapters:
+				var id = Data.can_talk_chapters.find(item)
+				tl.add_item(item + \" - %d/3\" % Data.chapters_progress[id])
+			# 让已经讲过章节的选项disabled
+			if Data.talked_chapters.size():
+				for chapter in Data.talked_chapters:
+					tl.set_item_disabled(Data.can_talk_chapters.find(chapter), true)
+		if Data.test_chapters.size():
+			var _tl = $\"Control/UITab/讲台/TestList\"
+			_tl.clear()
+			for item in Data.test_chapters:
+				var id = Data.test_chapters.find(item)
+				_tl.add_item(item + \" - %d/100\" % Data.chapters_exp[id])
+				# 让熟练度满的选项disable
+				if Data.chapters_exp[id] == 100 or Data.talked_chapters.has(item) == false:
+					_tl.set_item_disabled(id, true)
+		
+
+
+func enter_game():
+	set_process(true)
+	show()
+	$Control/FPS.visible = Data.show_fps
+
+
+func _process(delta):
+	$Control/LTUI/VBox/Day.text = \"Day %d\" % Data.now_day
+	$Control/LTUI/VBox/Time.text = \"Time: %d/300\" % Data.now_time
+	$Control/LTUI/VBox/Coin.text = \"钱: %d\" % Data.coins
+	$Control/LTUI/VBox/Satiety.text = \"饱食度: %d\" % Data.satiety
+	$Control/FPS.text = \"FPS:\" + str(Engine.get_frames_per_second())
+
+
+# 饱食度是否满足
+func is_satiety_enough(satiety: int):
+	if Data.satiety - satiety < 0:
+		return false
+	else:
+		return true
+
+# 减去饱食度
+func reduce_satiety(satiety: int):
+	Data.satiety -= satiety
+
+# 能否推动时间
+func can_add_time(time: int):
+	if Data.now_time + time > 300:
+		return false
+	else:
+		return true
+
+
+# 推动时间
+func add_time(time: int):
+	get_parent().get_node(\"Game\").add_time(time)
+
+
+func show_ui_tab(tab_index):
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	$Control/UITab.current_tab = tab_index
+	flash_tab(tab_index)
+	$Control/AnimationPlayer.play(\"ShowUITab\")
+	Data.player_can_move = false
+
+
+func _on_Cancel_pressed():
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	$Control/AnimationPlayer.play_backwards(\"ShowUITab\")
+	Data.player_can_move = true
+
+
+func _on_talk_OK_pressed():
+	var tl = $\"Control/UITab/讲台/TechList\"
+	var select_item = tl.get_selected_items()
+	if select_item.size():
+		if can_add_time(35) and is_satiety_enough(20):
+			add_time(35)
+			reduce_satiety(20)
+			Data.chapters_progress[select_item[0]] += 1
+			if Data.chapters_progress[select_item[0]] == 3:
+				# 要替换掉右侧的完成度信息
+				var rt = \" - %d/3\" % (Data.chapters_progress[select_item[0]] - 1)
+				Data.talked_chapters.append(tl.get_item_text(select_item[0]).replace(rt, \"\"))
+			_on_Cancel_pressed()
+		else:
+			send_info(\"没有多余时间或没有足够饱食度讲章节\")
+			# 没时间讲章节肯定没时间考试，直接return掉
+			return
+	var _tl = $\"Control/UITab/讲台/TestList\"
+	var si = _tl.get_selected_items()
+	if si.size():
+		if can_add_time(35) and is_satiety_enough(25):
+			if Data.chapters_exp[si[0]] < 100:
+				Data.chapters_exp[si[0]] += 25
+				add_time(35)
+				reduce_satiety(25)
+			else:
+				send_info(\"当前章节熟练度已满\")
+			_on_Cancel_pressed()
+		else:
+			send_info(\"没有多余时间或没有足够饱食度考试\")
+
+
+func undisabled_all_item():
+	var list = $\"Control/UITab/选择章节/ContentList\"
+	for index in list.get_item_count():
+		if list.is_item_disabled(index):
+			list.set_item_disabled(index, false)
+
+
+func _on_do_OK_pressed():
+	var select_index = $\"Control/UITab/办公/DoList\".get_selected_items()
+	if select_index.size():
+		do_things = select_index[0]
+		$\"Control/UITab/选择章节/ContentList\".unselect_all()
+		if do_things == 0:
+			# 将可以讲的章节设为disabled
+			undisabled_all_item()
+			if Data.can_talk_chapters.size():
+				var cl = $\"Control/UITab/选择章节/ContentList\"
+				for chapter in Data.can_talk_chapters:
+					cl.set_item_disabled(Data.chapters.find(chapter), true)
+		elif do_things == 1:
+			undisabled_all_item()
+			if Data.test_chapters.size():
+				var cl = $\"Control/UITab/选择章节/ContentList\"
+				for chapter in Data.test_chapters:
+					cl.set_item_disabled(Data.chapters.find(chapter), true)
+		$Control/UITab.current_tab = 2
+
+
+func _on_select_chapter_OK_pressed():
+	var select_index = $\"Control/UITab/选择章节/ContentList\".get_selected_items()
+	if select_index.size():
+		if can_add_time(40) and is_satiety_enough(30):
+			add_time(40)
+			reduce_satiety(30)
+			if do_things == 0:
+				Data.can_talk_chapters.append(Data.chapters[select_index[0]])
+				_on_Cancel_pressed()
+			elif do_things == 1:
+				Data.test_chapters.append(Data.chapters[select_index[0]])
+				_on_Cancel_pressed()
+		else:
+			send_info(\"没有多余时间或没有足够饱食度\")
+
+
+func _on_cai_OK_pressed():
+	var up = 0
+	var coin = 0
+	var select_index = $\"Control/UITab/食堂/EatList\".get_selected_items()
+	for index in select_index:
+		up += up_value[index]
+		coin += up_coin[index]
+	if Data.coins >= coin:
+		Data.coins -= coin
+		if Data.satiety + up > 100:
+			Data.satiety = 100
+		else:
+			Data.satiety += up
+	else:
+		send_info(\"你没有足够的钱来买这些食物！\")
+	_on_Cancel_pressed()
+
+
+func send_info(text: String, title: String = \"提示\"):
+	$Control/TSPanel/ShowTimer.start(5)
+	$Control/TSPanel/Title.text = title
+	$Control/TSPanel/Text.text = text
+	if !is_tspanel_show:
+		$Control/TSPanel/AnimationPlayer.play(\"Flag\")
+		is_tspanel_show = true
+
+
+func _on_ShowTimer_timeout():
+	$Control/TSPanel/AnimationPlayer.play_backwards(\"Flag\")
+	is_tspanel_show = false
+	$Control/TSPanel/ShowTimer.stop()
+
+
+func next_day():
+	$Control/ColorRect/AnimationPlayer.play(\"NextDay\")
+	yield($Control/ColorRect/AnimationPlayer, \"animation_finished\")
+	$Control/ColorRect/AnimationPlayer.play_backwards(\"NextDay\")
+"
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.2, 0.196078, 0.196078, 0.470588 )
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color( 0.156863, 0.690196, 0.92549, 1 )
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxEmpty" id=2]
+
+[sub_resource type="DynamicFont" id=3]
+size = 45
+extra_spacing_top = 5
+extra_spacing_bottom = 5
+extra_spacing_space = 50
+font_data = ExtResource( 2 )
+
+[sub_resource type="StyleBoxFlat" id=5]
+bg_color = Color( 1, 1, 1, 0.313726 )
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxEmpty" id=4]
+
+[sub_resource type="DynamicFont" id=6]
+size = 50
+extra_spacing_top = 5
+extra_spacing_bottom = 5
+font_data = ExtResource( 2 )
+
+[sub_resource type="StyleBoxFlat" id=7]
+bg_color = Color( 0.254902, 0.227451, 0.227451, 0.470588 )
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color( 0.113725, 0.717647, 0.909804, 0.470588 )
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id=8]
+bg_color = Color( 0.254902, 0.227451, 0.227451, 0.784314 )
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color( 0.254902, 0.227451, 0.227451, 0.470588 )
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id=9]
+bg_color = Color( 0.254902, 0.227451, 0.227451, 0.470588 )
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color( 0.254902, 0.227451, 0.227451, 0.470588 )
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id=13]
+bg_color = Color( 0.0941176, 0.0823529, 0.0823529, 0.784314 )
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color( 0.0862745, 0.509804, 0.890196, 1 )
+
+[sub_resource type="DynamicFont" id=14]
+size = 35
+extra_spacing_top = 5
+extra_spacing_bottom = 5
+font_data = ExtResource( 2 )
+
+[sub_resource type="DynamicFont" id=15]
+size = 25
+font_data = ExtResource( 2 )
+
+[sub_resource type="Animation" id=16]
+resource_name = "Flag"
+length = 0.5
+tracks/0/type = "bezier"
+tracks/0/path = NodePath(".:rect_position:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"points": PoolRealArray( 1920, -0.25, 0, 0.25, 0, 1536, -0.5, 0, 0.25, 0 ),
+"times": PoolRealArray( 0, 0.5 )
+}
+
+[sub_resource type="Animation" id=17]
+length = 0.001
+tracks/0/type = "bezier"
+tracks/0/path = NodePath(".:rect_position:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"points": PoolRealArray( 1920, -0.25, 0, 0.25, 0 ),
+"times": PoolRealArray( 0 )
+}
+
+[sub_resource type="Animation" id=18]
+resource_name = "NextDay"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath(".:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.1 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ false, true ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath(".:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.1, 0.5 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ) ]
+}
+
+[sub_resource type="Animation" id=19]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/path = NodePath(".:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ false ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath(".:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ) ]
+}
+
+[sub_resource type="Animation" id=10]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/path = NodePath("UITab:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ false ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("UITab:rect_scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 1e-05, 1e-05 ) ]
+}
+
+[sub_resource type="Animation" id=11]
+resource_name = "ShowUITab"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath("UITab:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.1 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ false, true ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("UITab:rect_scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.1, 0.5 ),
+"transitions": PoolRealArray( 1, 0.5, 1 ),
+"update": 0,
+"values": [ Vector2( 1e-05, 1e-05 ), Vector2( 1e-05, 1e-05 ), Vector2( 1, 1 ) ]
+}
+
+[node name="GlobalUI" type="CanvasLayer"]
+pause_mode = 2
+script = SubResource( 12 )
+
+[node name="Control" type="Control" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="LTUI" type="MarginContainer" parent="Control"]
+margin_right = 40.0
+margin_bottom = 40.0
+custom_constants/margin_left = 40
+
+[node name="VBox" type="VBoxContainer" parent="Control/LTUI"]
+margin_left = 40.0
+margin_right = 456.0
+margin_bottom = 404.0
+
+[node name="Day" type="Label" parent="Control/LTUI/VBox"]
+margin_right = 416.0
+margin_bottom = 98.0
+grow_horizontal = 0
+grow_vertical = 0
+custom_fonts/font = ExtResource( 1 )
+text = "Day 1"
+valign = 1
+
+[node name="Time" type="Label" parent="Control/LTUI/VBox"]
+margin_top = 102.0
+margin_right = 416.0
+margin_bottom = 200.0
+grow_vertical = 0
+custom_fonts/font = ExtResource( 1 )
+text = "Time: 300/300"
+valign = 1
+
+[node name="Coin" type="Label" parent="Control/LTUI/VBox"]
+margin_top = 204.0
+margin_right = 416.0
+margin_bottom = 302.0
+grow_vertical = 0
+custom_fonts/font = ExtResource( 1 )
+text = "钱: 0"
+valign = 1
+
+[node name="Satiety" type="Label" parent="Control/LTUI/VBox"]
+margin_top = 306.0
+margin_right = 416.0
+margin_bottom = 404.0
+grow_vertical = 0
+custom_fonts/font = ExtResource( 1 )
+text = "饱食度: 0"
+valign = 1
+
+[node name="FPS" type="Label" parent="Control"]
+anchor_left = 1.0
+anchor_right = 1.0
+margin_left = -320.0
+margin_bottom = 128.0
+grow_horizontal = 0
+grow_vertical = 0
+custom_fonts/font = ExtResource( 1 )
+text = "FPS:00"
+align = 1
+valign = 1
+
+[node name="UITab" type="TabContainer" parent="Control"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -600.0
+margin_top = -400.0
+margin_right = 600.0
+margin_bottom = 400.0
+grow_horizontal = 2
+grow_vertical = 2
+rect_scale = Vector2( 1e-05, 1e-05 )
+rect_pivot_offset = Vector2( 600, 400 )
+custom_styles/panel = SubResource( 1 )
+tabs_visible = false
+
+[node name="讲台" type="Panel" parent="Control/UITab"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 2.0
+margin_top = 2.0
+margin_right = -2.0
+margin_bottom = -2.0
+custom_styles/panel = SubResource( 2 )
+
+[node name="Title" type="Label" parent="Control/UITab/讲台"]
+anchor_right = 1.002
+anchor_bottom = 0.173
+margin_right = -2.39209
+margin_bottom = 0.291992
+custom_fonts/font = ExtResource( 1 )
+text = "讲台"
+align = 1
+valign = 1
+
+[node name="Question" type="Label" parent="Control/UITab/讲台"]
+anchor_top = 0.183
+anchor_right = 1.0
+anchor_bottom = 0.294
+margin_top = 0.331985
+margin_right = 2.0
+margin_bottom = -4.024
+custom_fonts/font = SubResource( 3 )
+text = " 你要讲什么？"
+valign = 1
+
+[node name="TS" type="Label" parent="Control/UITab/讲台"]
+anchor_top = 0.289
+anchor_right = 0.166
+anchor_bottom = 0.555
+margin_top = -0.0440063
+margin_right = -0.536011
+margin_bottom = 0.220001
+custom_fonts/font = SubResource( 3 )
+text = " 授课："
+valign = 1
+
+[node name="TechList" type="ItemList" parent="Control/UITab/讲台"]
+anchor_left = 0.166
+anchor_top = 0.294
+anchor_right = 0.928
+anchor_bottom = 0.545
+margin_left = -0.536011
+margin_top = -0.0240021
+margin_right = 0.111938
+margin_bottom = 0.179993
+focus_mode = 0
+custom_colors/guide_color = Color( 1, 1, 1, 0 )
+custom_colors/font_color_selected = Color( 1, 1, 1, 1 )
+custom_colors/font_color = Color( 1, 1, 1, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/selected = SubResource( 5 )
+custom_styles/bg = SubResource( 4 )
+
+[node name="TS2" type="Label" parent="Control/UITab/讲台"]
+anchor_top = 0.555
+anchor_right = 0.166
+anchor_bottom = 0.837
+margin_top = 0.220001
+margin_right = -0.536011
+margin_bottom = -0.252014
+custom_fonts/font = SubResource( 3 )
+text = " 考试："
+valign = 1
+
+[node name="TestList" type="ItemList" parent="Control/UITab/讲台"]
+anchor_left = 0.166
+anchor_top = 0.565
+anchor_right = 0.928
+anchor_bottom = 0.817
+margin_left = -0.536011
+margin_top = 0.26001
+margin_right = 0.112061
+margin_bottom = 15.668
+focus_mode = 0
+custom_colors/guide_color = Color( 1, 1, 1, 0 )
+custom_colors/font_color_selected = Color( 1, 1, 1, 1 )
+custom_colors/font_color = Color( 1, 1, 1, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/selected = SubResource( 5 )
+custom_styles/bg = SubResource( 4 )
+
+[node name="ColorRect" type="ColorRect" parent="Control/UITab/讲台"]
+margin_left = 206.0
+margin_top = 439.0
+margin_right = 1110.0
+margin_bottom = 443.0
+
+[node name="CenterContainer" type="CenterContainer" parent="Control/UITab/讲台"]
+anchor_top = 0.857
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = -0.172058
+
+[node name="BTNS" type="HBoxContainer" parent="Control/UITab/讲台/CenterContainer"]
+margin_left = 328.0
+margin_top = 13.0
+margin_right = 868.0
+margin_bottom = 100.0
+custom_constants/separation = 40
+
+[node name="Cancel" type="Button" parent="Control/UITab/讲台/CenterContainer/BTNS"]
+margin_right = 250.0
+margin_bottom = 87.0
+rect_min_size = Vector2( 250, 0 )
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 6 )
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/normal = SubResource( 9 )
+text = "取消"
+
+[node name="OK" type="Button" parent="Control/UITab/讲台/CenterContainer/BTNS"]
+margin_left = 290.0
+margin_right = 540.0
+margin_bottom = 87.0
+rect_min_size = Vector2( 250, 0 )
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 6 )
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/normal = SubResource( 9 )
+text = "确定"
+
+[node name="办公" type="Panel" parent="Control/UITab"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 2.0
+margin_top = 2.0
+margin_right = -2.0
+margin_bottom = -2.0
+custom_styles/panel = SubResource( 2 )
+
+[node name="Title" type="Label" parent="Control/UITab/办公"]
+anchor_right = 1.002
+anchor_bottom = 0.173
+margin_right = -2.39209
+margin_bottom = 0.291992
+custom_fonts/font = ExtResource( 1 )
+text = "办公"
+align = 1
+valign = 1
+
+[node name="Question" type="Label" parent="Control/UITab/办公"]
+anchor_top = 0.183
+anchor_right = 1.0
+anchor_bottom = 0.294
+margin_top = 0.331985
+margin_right = 2.0
+margin_bottom = -4.024
+custom_fonts/font = SubResource( 3 )
+text = " 你要做什么？"
+valign = 1
+
+[node name="DoList" type="ItemList" parent="Control/UITab/办公"]
+anchor_left = 0.059
+anchor_top = 0.334
+anchor_right = 0.943
+anchor_bottom = 0.817
+margin_left = -0.564003
+margin_top = 0.135986
+margin_right = 0.171997
+margin_bottom = -0.332031
+focus_mode = 0
+custom_colors/guide_color = Color( 1, 1, 1, 0 )
+custom_colors/font_color_selected = Color( 1, 1, 1, 1 )
+custom_colors/font_color = Color( 1, 1, 1, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/selected = SubResource( 5 )
+custom_styles/bg = SubResource( 4 )
+items = [ "做教学PPT", null, false, "编写试卷", null, false ]
+
+[node name="CenterContainer" type="CenterContainer" parent="Control/UITab/办公"]
+anchor_top = 0.857
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = -0.172058
+
+[node name="BTNS" type="HBoxContainer" parent="Control/UITab/办公/CenterContainer"]
+margin_left = 328.0
+margin_top = 13.0
+margin_right = 868.0
+margin_bottom = 100.0
+custom_constants/separation = 40
+
+[node name="Cancel" type="Button" parent="Control/UITab/办公/CenterContainer/BTNS"]
+margin_right = 250.0
+margin_bottom = 87.0
+rect_min_size = Vector2( 250, 0 )
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 6 )
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/normal = SubResource( 9 )
+text = "取消"
+
+[node name="OK" type="Button" parent="Control/UITab/办公/CenterContainer/BTNS"]
+margin_left = 290.0
+margin_right = 540.0
+margin_bottom = 87.0
+rect_min_size = Vector2( 250, 0 )
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 6 )
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/normal = SubResource( 9 )
+text = "确定"
+
+[node name="选择章节" type="Panel" parent="Control/UITab"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 2.0
+margin_top = 2.0
+margin_right = -2.0
+margin_bottom = -2.0
+custom_styles/panel = SubResource( 2 )
+
+[node name="Title" type="Label" parent="Control/UITab/选择章节"]
+anchor_right = 1.002
+anchor_bottom = 0.173
+margin_right = -2.39209
+margin_bottom = 0.291992
+custom_fonts/font = ExtResource( 1 )
+text = "选择章节"
+align = 1
+valign = 1
+
+[node name="Question" type="Label" parent="Control/UITab/选择章节"]
+anchor_top = 0.183
+anchor_right = 1.0
+anchor_bottom = 0.294
+margin_top = 0.331985
+margin_right = 2.0
+margin_bottom = -4.024
+custom_fonts/font = SubResource( 3 )
+text = " 选择要制作的章节："
+valign = 1
+
+[node name="ContentList" type="ItemList" parent="Control/UITab/选择章节"]
+anchor_left = 0.059
+anchor_top = 0.334
+anchor_right = 0.943
+anchor_bottom = 0.817
+margin_left = -0.564003
+margin_top = 0.135986
+margin_right = 0.171997
+margin_bottom = -0.332031
+focus_mode = 0
+custom_colors/guide_color = Color( 1, 1, 1, 0 )
+custom_colors/font_color_selected = Color( 1, 1, 1, 1 )
+custom_colors/font_color = Color( 1, 1, 1, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/selected = SubResource( 5 )
+custom_styles/bg = SubResource( 4 )
+items = [ "第 1 章 二次根式", null, false, "第 2 章 一元二次方程", null, false, "第 3 章 数据分析初步", null, false, "第 4 章 平行四边形", null, false, "第 5 章 特殊平行四边形", null, false, "第 6 章 反比例函数", null, false ]
+
+[node name="CenterContainer" type="CenterContainer" parent="Control/UITab/选择章节"]
+anchor_top = 0.857
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = -0.172058
+
+[node name="BTNS" type="HBoxContainer" parent="Control/UITab/选择章节/CenterContainer"]
+margin_left = 328.0
+margin_top = 13.0
+margin_right = 868.0
+margin_bottom = 100.0
+custom_constants/separation = 40
+
+[node name="Cancel" type="Button" parent="Control/UITab/选择章节/CenterContainer/BTNS"]
+margin_right = 250.0
+margin_bottom = 87.0
+rect_min_size = Vector2( 250, 0 )
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 6 )
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/normal = SubResource( 9 )
+text = "取消"
+
+[node name="OK" type="Button" parent="Control/UITab/选择章节/CenterContainer/BTNS"]
+margin_left = 290.0
+margin_right = 540.0
+margin_bottom = 87.0
+rect_min_size = Vector2( 250, 0 )
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 6 )
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/normal = SubResource( 9 )
+text = "确定"
+
+[node name="食堂" type="Panel" parent="Control/UITab"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 2.0
+margin_top = 2.0
+margin_right = -2.0
+margin_bottom = -2.0
+custom_styles/panel = SubResource( 2 )
+
+[node name="Title" type="Label" parent="Control/UITab/食堂"]
+anchor_right = 1.002
+anchor_bottom = 0.173
+margin_right = -2.39209
+margin_bottom = 0.291992
+custom_fonts/font = ExtResource( 1 )
+text = "食堂"
+align = 1
+valign = 1
+
+[node name="Question" type="Label" parent="Control/UITab/食堂"]
+anchor_top = 0.183
+anchor_right = 1.0
+anchor_bottom = 0.294
+margin_top = 0.331985
+margin_right = 2.0
+margin_bottom = -4.024
+custom_fonts/font = SubResource( 3 )
+text = " 你要吃什么？"
+valign = 1
+
+[node name="EatList" type="ItemList" parent="Control/UITab/食堂"]
+anchor_left = 0.059
+anchor_top = 0.334
+anchor_right = 0.943
+anchor_bottom = 0.817
+margin_left = -0.564003
+margin_top = 0.135986
+margin_right = 0.171997
+margin_bottom = -0.332031
+focus_mode = 0
+custom_colors/guide_color = Color( 1, 1, 1, 0 )
+custom_colors/font_color_selected = Color( 1, 1, 1, 1 )
+custom_colors/font_color = Color( 1, 1, 1, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/selected = SubResource( 5 )
+custom_styles/bg = SubResource( 4 )
+items = [ "油饼 - 3元(提升10)", null, false, "荔枝 - 2元(提升5)", null, false, "树枝 - 666元(提升1)", null, false, "香精煎鱼 - 20元(提升50)", null, false, "香翅捞饭 - 25元(提升60)", null, false, "蒸乌鱼 - 30元(提升80)", null, false, "蒸梅油酥汁 - 15元(提升20)", null, false ]
+allow_reselect = true
+
+[node name="CenterContainer" type="CenterContainer" parent="Control/UITab/食堂"]
+anchor_top = 0.857
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = -0.172058
+
+[node name="BTNS" type="HBoxContainer" parent="Control/UITab/食堂/CenterContainer"]
+margin_left = 328.0
+margin_top = 13.0
+margin_right = 868.0
+margin_bottom = 100.0
+custom_constants/separation = 40
+
+[node name="Cancel" type="Button" parent="Control/UITab/食堂/CenterContainer/BTNS"]
+margin_right = 250.0
+margin_bottom = 87.0
+rect_min_size = Vector2( 250, 0 )
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 6 )
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/normal = SubResource( 9 )
+text = "取消"
+
+[node name="OK" type="Button" parent="Control/UITab/食堂/CenterContainer/BTNS"]
+margin_left = 290.0
+margin_right = 540.0
+margin_bottom = 87.0
+rect_min_size = Vector2( 250, 0 )
+focus_mode = 0
+mouse_default_cursor_shape = 2
+custom_fonts/font = SubResource( 6 )
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/normal = SubResource( 9 )
+text = "确定"
+
+[node name="TSPanel" type="Panel" parent="Control"]
+anchor_left = 1.0
+anchor_right = 1.0
+margin_top = 128.0
+margin_right = 384.0
+margin_bottom = 272.0
+grow_horizontal = 0
+custom_styles/panel = SubResource( 13 )
+
+[node name="Title" type="Label" parent="Control/TSPanel"]
+margin_left = 20.0
+margin_right = 76.0
+margin_bottom = 64.0
+custom_fonts/font = SubResource( 14 )
+text = "Title"
+align = 1
+valign = 1
+
+[node name="Text" type="Label" parent="Control/TSPanel"]
+margin_left = 20.0
+margin_top = 56.0
+margin_right = 368.0
+margin_bottom = 136.0
+custom_fonts/font = SubResource( 15 )
+text = "Text"
+autowrap = true
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Control/TSPanel"]
+anims/Flag = SubResource( 16 )
+anims/RESET = SubResource( 17 )
+
+[node name="ShowTimer" type="Timer" parent="Control/TSPanel"]
+wait_time = 5.0
+
+[node name="ColorRect" type="ColorRect" parent="Control"]
+visible = false
+modulate = Color( 1, 1, 1, 0 )
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color( 0, 0, 0, 1 )
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Control/ColorRect"]
+anims/NextDay = SubResource( 18 )
+anims/RESET = SubResource( 19 )
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Control"]
+anims/RESET = SubResource( 10 )
+anims/ShowUITab = SubResource( 11 )
+
+[connection signal="pressed" from="Control/UITab/讲台/CenterContainer/BTNS/Cancel" to="." method="_on_Cancel_pressed"]
+[connection signal="pressed" from="Control/UITab/讲台/CenterContainer/BTNS/OK" to="." method="_on_talk_OK_pressed"]
+[connection signal="pressed" from="Control/UITab/办公/CenterContainer/BTNS/Cancel" to="." method="_on_Cancel_pressed"]
+[connection signal="pressed" from="Control/UITab/办公/CenterContainer/BTNS/OK" to="." method="_on_do_OK_pressed"]
+[connection signal="pressed" from="Control/UITab/选择章节/CenterContainer/BTNS/Cancel" to="." method="_on_Cancel_pressed"]
+[connection signal="pressed" from="Control/UITab/选择章节/CenterContainer/BTNS/OK" to="." method="_on_select_chapter_OK_pressed"]
+[connection signal="pressed" from="Control/UITab/食堂/CenterContainer/BTNS/Cancel" to="." method="_on_Cancel_pressed"]
+[connection signal="pressed" from="Control/UITab/食堂/CenterContainer/BTNS/OK" to="." method="_on_cai_OK_pressed"]
+[connection signal="timeout" from="Control/TSPanel/ShowTimer" to="." method="_on_ShowTimer_timeout"]

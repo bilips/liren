@@ -1,0 +1,177 @@
+[gd_scene load_steps=11 format=2]
+
+[ext_resource path="res://assets/fonts/TitleFont.tres" type="DynamicFont" id=1]
+[ext_resource path="res://scenes/menu/UIFont.tres" type="DynamicFont" id=2]
+
+[sub_resource type="StyleBoxFlat" id=4]
+bg_color = Color( 0.105882, 0.701961, 0.858824, 1 )
+
+[sub_resource type="GDScript" id=3]
+resource_name = "SceneChanger"
+script/source = "extends Control
+
+var loader:ResourceInteractiveLoader
+var item_count
+var now_count
+
+func _ready():
+	set_process(false)
+
+func _process(delta):
+	now_count = loader.get_stage()
+	loader.poll()
+	
+	$ProgressBar.value = now_count % item_count
+	
+	if loader.get_resource():
+		set_process(false)
+		get_tree().change_scene_to(loader.get_resource())
+		$AnimationPlayer.play_backwards(\"Flag\")
+
+func change_scene(path: String):
+	raise()
+	loader = ResourceLoader.load_interactive(path)
+	item_count = loader.get_stage_count()
+	$ProgressBar.max_value = item_count - 1
+	$AnimationPlayer.play(\"Flag\")
+	yield($AnimationPlayer, \"animation_finished\")
+	set_process(true)
+"
+
+[sub_resource type="Animation" id=5]
+resource_name = "Float"
+length = 4.0
+loop = true
+tracks/0/type = "bezier"
+tracks/0/path = NodePath(".:margin_top")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"points": PoolRealArray( 0, -0.25, 0, 2.3, 143.094, 0.279968, -2.4, -128.91, 0.25, 0 ),
+"times": PoolRealArray( 0, 4 )
+}
+
+[sub_resource type="Animation" id=6]
+length = 0.001
+tracks/0/type = "bezier"
+tracks/0/path = NodePath(".:margin_top")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"points": PoolRealArray( 0, -0.25, 0, 0.25, 0 ),
+"times": PoolRealArray( 0 )
+}
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.278431, 0.298039, 0.305882, 1 )
+corner_radius_top_left = 56
+corner_radius_top_right = 56
+corner_radius_bottom_right = 56
+corner_radius_bottom_left = 56
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color( 0.278431, 0.298039, 0.305882, 0.313726 )
+corner_radius_top_left = 56
+corner_radius_top_right = 56
+corner_radius_bottom_right = 56
+corner_radius_bottom_left = 56
+
+[sub_resource type="Animation" id=7]
+resource_name = "Flag"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath(".:rect_size")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.1, 0.5 ),
+"transitions": PoolRealArray( 1, 0.5, 1 ),
+"update": 0,
+"values": [ Vector2( 0, 1080 ), Vector2( 0, 1080 ), Vector2( 1920, 1080 ) ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath(".:visible")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.1 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ false, true ]
+}
+
+[sub_resource type="Animation" id=8]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/path = NodePath(".:rect_size")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 0, 1080 ) ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath(".:visible")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ false ]
+}
+
+[node name="SceneChanger" type="Panel"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_bottom = 1080.0
+rect_clip_content = true
+custom_styles/panel = SubResource( 4 )
+script = SubResource( 3 )
+
+[node name="Info" type="Label" parent="."]
+anchor_top = 0.659
+anchor_right = 0.304
+anchor_bottom = 0.793
+margin_right = 0.319946
+margin_bottom = 7.55994
+custom_fonts/font = ExtResource( 1 )
+text = "Loading！"
+align = 1
+valign = 1
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Info"]
+autoplay = "Float"
+anims/Float = SubResource( 5 )
+anims/RESET = SubResource( 6 )
+
+[node name="ProgressBar" type="ProgressBar" parent="."]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 24.0
+margin_top = -136.0
+margin_right = -24.0
+margin_bottom = -24.0
+custom_fonts/font = ExtResource( 2 )
+custom_styles/fg = SubResource( 1 )
+custom_styles/bg = SubResource( 2 )
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+anims/Flag = SubResource( 7 )
+anims/RESET = SubResource( 8 )

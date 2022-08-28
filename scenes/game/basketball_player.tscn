@@ -1,0 +1,56 @@
+[gd_scene load_steps=18 format=2]
+
+[ext_resource path="res://assets/art/cxk/4.png" type="Texture" id=1]
+[ext_resource path="res://assets/art/cxk/7.png" type="Texture" id=2]
+[ext_resource path="res://assets/art/cxk/12.png" type="Texture" id=3]
+[ext_resource path="res://assets/art/cxk/13.png" type="Texture" id=4]
+[ext_resource path="res://assets/art/cxk/6.png" type="Texture" id=5]
+[ext_resource path="res://assets/art/cxk/1.png" type="Texture" id=6]
+[ext_resource path="res://assets/art/cxk/2.png" type="Texture" id=7]
+[ext_resource path="res://assets/art/cxk/5.png" type="Texture" id=8]
+[ext_resource path="res://assets/art/cxk/3.png" type="Texture" id=9]
+[ext_resource path="res://assets/art/cxk/8.png" type="Texture" id=10]
+[ext_resource path="res://assets/art/cxk/11.png" type="Texture" id=11]
+[ext_resource path="res://assets/art/cxk/10.png" type="Texture" id=12]
+[ext_resource path="res://assets/art/cxk/9.png" type="Texture" id=13]
+[ext_resource path="res://assets/audios/你干嘛哎呦.mp3" type="AudioStream" id=14]
+
+[sub_resource type="GDScript" id=1]
+resource_name = "basketball_player"
+script/source = "extends Area
+
+
+func _on_basketball_player_body_entered(body):
+	if body.name == \"Teacher\":
+		$\"你干嘛哎呦\".play()
+		GlobalUi.send_info(\"小黑子露出鸡脚了吧！\", \"你干嘛哎呦\")
+"
+
+[sub_resource type="SpriteFrames" id=2]
+animations = [ {
+"frames": [ ExtResource( 6 ), ExtResource( 7 ), ExtResource( 9 ), ExtResource( 1 ), ExtResource( 8 ), ExtResource( 5 ), ExtResource( 2 ), ExtResource( 10 ), ExtResource( 13 ), ExtResource( 12 ), ExtResource( 11 ), ExtResource( 3 ), ExtResource( 4 ) ],
+"loop": true,
+"name": "play_basketball",
+"speed": 10.0
+} ]
+
+[sub_resource type="BoxShape" id=3]
+extents = Vector3( 1.58342, 1.56367, 0.0825538 )
+
+[node name="basketball_player" type="Area"]
+script = SubResource( 1 )
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+billboard = 2
+frames = SubResource( 2 )
+animation = "play_basketball"
+frame = 2
+playing = true
+
+[node name="CollisionShape" type="CollisionShape" parent="."]
+shape = SubResource( 3 )
+
+[node name="你干嘛哎呦" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 14 )
+
+[connection signal="body_entered" from="." to="." method="_on_basketball_player_body_entered"]
